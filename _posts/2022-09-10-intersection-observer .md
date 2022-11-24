@@ -1,6 +1,6 @@
 ---
 title: "Intersection observer"
-categories: javascript
+categories: 브라우저
 tags: [javascript, 브라우저]
 ---
 
