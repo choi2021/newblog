@@ -24,7 +24,7 @@ Critical Rendering Path는 브라우저에서 <u>html, css, javascript를 해석
 
 
 
-<img src="https://pollen-port-115.notion.site/image/https%3A%2F%2Fs3-us-west-2.amazonaws.com%2Fsecure.notion-static.com%2F0e2dd561-a784-4bde-b274-8d7cadc97440%2FUntitled.png?table=block&id=2b29569e-a295-4eda-921f-ea9c0fd861f0&spaceId=75afd7aa-b6ab-4cc8-9a59-9695618bc541&width=2000&userId=&cache=v2" width="800"/>
+<img src="https://web-dev.imgix.net/image/T4FyVKpzu4WKF1kBNvXepbi08t52/S9TJhnMX1cu1vrYuQRqM.png?auto=format&w=741" width="800"/>
 
 
 
