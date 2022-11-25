@@ -1,7 +1,7 @@
 ---
 title: "Critical Rendering Path"
-categories:브라우저
-tags: [javascript, 브라우저]
+categories: 브라우저
+tags: ["javascript", "브라우저"]
 ---
 
 
