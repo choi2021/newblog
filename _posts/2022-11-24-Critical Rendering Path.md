@@ -14,7 +14,9 @@ tags: ["javascript", "브라우저"]
 
 ## CRP의 정의
 
-Critical Rendering Path는 브라우저에서 <u>html, css, javascript를 해석해서 화면에 그려주는 과정</u>이라고 정의할 수 있다. 우리가 작성한 코드들, html, css, javascript를 받으면 그걸 그대로 보여주는 게 아니라, 먼저 브라우저가 이해할 수 있게 변환해줘야한다. 이때 html parser와 css parser를 이용해 코드를 읽어, 브라우저가 이해할 수 있는 구조로 **토큰화**를 한다. 이 토큰의 결과물들을 한번쯤 들어본 적 있는 DOM과 CSSOM이다.
+Critical Rendering Path는 브라우저에서 <u>html, css, javascript를 해석해서 화면에 그려주는 과정</u>이라고 정의할 수 있다. 우리가 작성한 코드들, html, css, javascript를 받으면 그걸 그대로 보여주는 게 아니라, 먼저 브라우저가 이해할 수 있게 변환해줘야한다. 이때 html parser와 css parser를 이용해 코드를 읽어, 브라우저가 이해할 수 있는 구조로 **토큰화**를 한다. 이 토큰의 결과물들을 한번쯤 들어본 적 있는 DOM과 CSSOM이다. 
+
+공부하면서 먼저 정리해둘 것은 각 파일을 읽어나가는 과정에 사용되는 엔진이 **두가지**라는 점이었다. 하나는 렌더링을 해주는 "브라우저의 렌더링 엔진", 다른 하나는 자바스크립트를 읽어주는 "자바스크립트 엔진"이다. 전달받은 html을 읽는 것은 렌더링 엔진, 자바스크립트를 읽고 DOM을 조작하는 등의 일을 하는 것은 자바스크립트 엔진이다.
 
 
 
@@ -61,7 +63,7 @@ DOM은 Document Object Model로 HTML parser를 이용해 브라우저가 이해�
 
 ### CSSOM 트리
 
-css를 inline요소로 넣어줄 수 있지만 보통은 둘을 분리하기 위해 따로 style.css 파일로 분리한다. 이렇게 분리된 css파일 또한 html파일처럼 css parser에 의해 브라우저가 이해할 수 있는 트리구조인 CSSOM (CSS Object Model)을 만들게 된다. 브라우저는 tree구조를 통해서 CSS의 기본 원리인 Cascading rule (아래로 내려올 수록, 해당 태그에 구체적인 styling요소일수록 우선순위가 높다)를 적용할 수 있다. 
+css파일은 보통 html의 head에 넣어주는데 자바스크립트 엔진이 html을 읽다가 link:css를 만나면 html 파싱을 멈추고 css 파일을 불러온다. 불러온 css파일은 css parser에 의해 브라우저가 이해할 수 있는 트리구조인 CSSOM (CSS Object Model)을 만들게 되고, 브라우저는 만든 tree구조를 통해서 CSS의 기본 원리인 Cascading rule (아래로 내려올 수록, 해당 태그에 구체적인 styling요소일수록 우선순위가 높다)를 적용할 수 있다.  CSSOM을 만든 이후에 다시 html파싱이 멈춰진 곳으로 돌아가 다시 html을 파싱한다.
 
 
 
@@ -101,7 +103,17 @@ Render Tree는 앞서 정리한 DOM tree와 CSSOM Tree를 합쳐서, DOM Tree의
 
 <img src="https://web-dev.imgix.net/image/C47gYyWYVMMhDmtYSLOWazuyePF2/b6Z2Gu6UD1x1imOu1tJV.png?auto=format" width="800"/>
 
-이렇게 어떤 요소에 어떻게 그릴지를 정했지만 <u>어디에 요소를 그릴지</u>는 정해지지 않았다.
+
+
+그러면 우리가 작성한 <u>Javascript</u>는 어떻게 작동하는 걸까?
+
+
+
+### Javascript
+
+자바스크립트도 css파일과 동일하게 html의 파싱하는 과정에서 렌더링 엔진이 script를 태그를 만나면 DOM생성을 중지하고 자바스크립트 엔진의 파싱과 실행을 진행한다. 자바스크립트 엔진은 자바스크립트를 읽어 AST(abstract syntax tree)를 생성한 후에 실행한다. 이때 DOM이나 CSSOM을 변경한다면 렌더트리가 변경되게 되고, 변경된 렌더트리를 기준으로 브라우저 화면을 다시 그리는 리플로우(layout 계산을 다시 실행)와 리페인트(다시 paint과정을 다시 진행)를 한다.
+
+이렇게 자바스크립트로 변경까지 한 후에 렌더트리를 만들었지만, <u>어디에 요소를 그릴지</u> 정해지지 않았다.
 
 
 
@@ -176,7 +188,7 @@ Layout과정은 Render Tree로 어떤요소로 어떻게 그릴지를 결정한 
 
 
 
-### Reconcilation의 비교과정
+### Reconcilation
 
 react에서 리랜더링이 필요한 경우는 props나 상태가 변화한 경우다. 상태변화에 따라 V-DOM을 업데이트하고 실제 DOM과 비교해, 필요한 부분을 업데이트하는 과정을 **Reconcilation**라고 한다. Reconcilation을 하기 위해 변화에 따라 어떤 요소가 바뀌었는지 일일히 비교한다면 리액트 공식홈페이지에서는 O(n^3)의 시간복잡도(n은 tree 요소 수) 를 갖는다고 한다. 일일히 다 비교하지 않기 위해서 리액트는 두가지 전제를 이용한다. 
 
