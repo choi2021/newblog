@@ -1,0 +1,43 @@
+# main links
+main:
+  - title: 'Home'
+    url: https://choi2021.github.io/
+  - title: 'Category'
+    url: /categories/
+  - title: 'Tags'
+    url: /tags/
+  # - title: "About"
+  #   url: https://mmistakes.github.io/minimal-mistakes/about/
+  # - title: "Sample Posts"
+  #   url: /year-archive/
+  # - title: 'Sample Collections'
+  #   url: /collection-archive/
+  # - title: "Sitemap"
+  #   url: /sitemap/
+sidebar-category:
+  - title: '카테고리'
+    children:
+      - title: '블로그'
+        url: '/blog'
+      - title: '자바스크립트'
+        url: '/javascript'
+      - title: 'WEB'
+        url: '/web'
+      - title: '기획'
+        url: '/plan'
+      - title: '포트폴리오'
+        url: '/portfolio'
+      - title: '원티드 프리온보딩'
+        url: '/wanted-pre-onboarding'
+      - title: '회고'
+        url: '/review'
+      - title: '모으잡'
+        url: '/moejob'
+      - title: '노드JS'
+        url: '/nodejs'
+      - title: 'Next JS'
+        url: '/nextjs'
+      - title: '리액트'
+        url: '/react'
+      - title: '타입스크립트'
+        url: '/typescript'
