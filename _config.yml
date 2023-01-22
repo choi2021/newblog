@@ -268,7 +268,7 @@ defaults:
       author_profile: true
       read_time: true
       show_date: true # 작성날짜 관련 추가
-      comments: # true
+      comments: true # true
       share: true
       mathjax: true
       related: true
