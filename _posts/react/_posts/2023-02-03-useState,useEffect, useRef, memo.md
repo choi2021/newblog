@@ -31,7 +31,7 @@ function Form() {
   useEffect(function persistForm() {
     localStorage.setItem('formData', name);
   });
-
+    
   // 3. Use the surname state variable
   const [surname, setSurname] = useState('Poppins');
 
@@ -69,15 +69,234 @@ function Form() {
 }
 ```
 
-`name`이 처음에 'Mary'기 때문에 `useEffect(persistForm)`은 무시된다. 그로 인해 hooks들의 순서가 바뀌게 되고 이전 렌더링과 다른 결과를 만들어 예상치 못하는 버그가 만들어 질 수 있다. 이렇게 순서가 바뀌면 에러가 날 수 있는 부분은 useState와 useEffect
+`name`이 처음에 'Mary'기 때문에 `useEffect(persistForm)`은 무시된다. 그로 인해 hooks들의 순서가 바뀌게 되고 이전 렌더링과 다른 결과를 만들어 예상치 못하는 버그가 만들어 질 수 있다고 한다. 그러면 어떤 버그가 만들어 질 수 있을까? 이 부분을 이해하기 위해서는 Hook들이 어떻게 만들어졌는지를 구현해야 한다. 
 
 
+
+### useState와 useEffect 구현해보기
+
+hook들이 클로저를 이용해서 구현되어 있다는 사실은 알고 있었지만, 실제로 구현해보지는 못했다. 이번 기회에 실제로 구현하는 예제 코드들을 찾아봤고 그중 가장 잘되어있는 [황준일님 블로그](https://junilhwang.github.io/TIL/Javascript/Design/Vanilla-JS-Make-useSate-hook/#_2-bottom-up-%E1%84%87%E1%85%AE%E1%86%AB%E1%84%89%E1%85%A5%E1%86%A8)와 [Philip Fabianek의 영상](https://www.youtube.com/watch?v=1VVfMVQabx0) 속 코드를 참조해서 구현했다.
+
+먼저 **useState** 를 구현해보자. `render()`함수 구현은 제외했다.
+
+```jsx
+const React = (() => {
+  const useState = (initialValue) => {
+    let state = initialValue;
+    const setterFn = (newValue) => {
+      state = newValue; // 새로운 state를 할당한다
+      // render(); // 리랜더링
+    };
+    return [state, setterFn];
+  };
+  return {
+    useState,
+  };
+})();
+
+const { useState } = ReactX;
+const Component = () => {
+  const [count, setCount] = useState(1);
+  console.log(count); 
+};
+Component(); // 1
+Component(); // 1
+```
+
+위 예제에서 React 내부의 `useState`를 구현했지만 Component를 리랜더링 하게 되면 이전 값에서 불러오는 것이 아니라 초기값 1을 다시 가져오는 것을 볼 수 있다.
+
+문제를 해결하기 위해서는 state를 `useState`함수 내부에 두는 것이 아니라 상위에서 참조하는 형식으로 **클로저**를 이용해야 한다. 이때 초기 값은 처음에만 할당할 수 있게 state가 undefined일 때만 할당하게 한다.
+
+```jsx
+const React = (() => {
+  let state;
+  const useState = (initialValue) => {
+    if (state === undefined) {
+      state = initialValue;
+    }
+    const setterFn = (newValue) => {
+      state = newValue; // 새로운 state를 할당한다
+      // render(); // 리랜더링
+    };
+    return [state, setterFn];
+  };
+  return {
+    useState,
+  };
+})();
+
+const { useState } = ReactX;
+const Component = () => {
+  const [count, setCount] = useState(1);
+  const [count2, setCount2] = useState(5);
+  console.log(count, count2);
+
+};
+Component(); // 1,1
+
+```
+
+다음으로 해결해야 할 문제는 여러 개의 state를 다룰 때다. count2의 초기 값을 5로 정했지만 React 함수 내부의 같은 `state`를 참조하고 있기 때문에 새로운 초기 값이 할당되지 않고 `count`에 저장된 1에서 시작하는 것을 볼 수 있다.
+
+이점을 해결하기 위해서는 state를 **배열**로 둔다. 배열로 두게 되면 state가 여러 개가 되어도 해당 index를 통해 접근하고 값을 변경할 수 있게 된다. 리랜더링 시에는 다시 처음부터 state들을 확인해야 하므로 `resetIndex`함수를 추가했다.
+
+```jsx
+const React = (() => {
+  let state = [];
+  let index = 0;
+  const useState = (initialValue) => {
+    const localIndex = index;
+    index++;
+    if (state[localIndex] === undefined) {
+      state[localIndex] = initialValue;
+    }
+    const setterFn = (newValue) => {
+      state[localIndex] = newValue;
+      // render(); // 리랜더링
+    };
+    return [state[localIndex], setterFn];
+  };
+
+  const resetIndex = () => {
+    index = 0;
+  };
+
+  return {
+    useState,
+    resetIndex,
+  };
+})();
+
+const { useState, resetIndex } = ReactX;
+const Component = () => {
+  const [count, setCount] = useState(1);
+  const [count2, setCount2] = useState(5);
+
+  console.log(count, count2); // 1 5
+};
+Component();
+resetIndex();
+Component();
+
+```
+
+
+
+이제는 useState에 이어 **useEffect**를 구현해보자. useEffect는 callback 함수와 dependency 배열을 인자로 받는 특징이 있다. 
+
+```jsx
+const React = (() => {
+  let state = [];
+  let index = 0;
+  const useState = (initialValue) => {
+    const localIndex = index;
+    index++;
+    if (state[localIndex] === undefined) {
+      state[localIndex] = initialValue;
+    }
+    const setterFn = (newValue) => {
+      state[localIndex] = newValue;
+      // render(); // 리랜더링
+    };
+    return [state[localIndex], setterFn];
+  };
+
+  const resetIndex = () => {
+    index = 0;
+  };
+
+  const useEffect = (callback, dependencyArray) => {
+    let hasChanged = true;
+    if (hasChanged) {
+      callback();
+    }
+  }
+
+  return {
+    useState,
+    resetIndex,
+  };
+})();
+
+```
+
+위 코드에서 useEffect는 변화가 있으면 callback함수를 수행하는데 만약 dependencyArray가 없다면 항상 hasChanged가 true기 때문에 항상 수행되게 된다. 이제 dependency 비교하는 코드를 넣어보자. 
+
+```jsx
+const React = (() => {
+  let hooks = [];
+  let index = 0;
+  const useState = (initialValue) => {
+    const localIndex = index;
+    index++;
+    if (hooks[localIndex] === undefined) {
+      hooks[localIndex] = initialValue;
+    }
+    const setterFn = (newValue) => {
+      hooks[localIndex] = newValue;
+    };
+    return [hooks[localIndex], setterFn];
+  };
+  const resetIndex = () => {
+    index = 0;
+  };
+
+  const useEffect = (callback, dependencyArray) => {
+    let hasChanged = true;
+    const oldDependencies = hooks[index];
+    if (oldDependencies) {
+      hasChanged = false;
+      dependencyArray.forEach((dependency, index) => {
+        const oldDependency = oldDependencies[index];
+        const areTheSame = Object.is(dependency, oldDependency);
+        if (!areTheSame) {
+          hasChanged = true;
+        }
+      });
+    }
+    if (hasChanged) {
+      callback();
+    }
+    hooks[index] = dependencyArray;
+    index++;
+  };
+  return {
+    useState,
+    resetIndex,
+    useEffect,
+  };
+})();
+
+const { useState, resetIndex, useEffect } = React;
+const Component = () => {
+  const [count, setCount] = useState(1);
+  useEffect(() => {
+    console.log(count);
+  }, [count]);
+  setCount(2);
+};
+Component(); // 1
+resetIndex();
+Component(); // 2
+resetIndex();
+Component(); // 3
+
+
+```
+
+dependency를 비교하기 위해서는 이전 dependency에 대한 정보를 저장하고 있어야 한다. 저장하기 위해 useState에서 사용했던 state를 hooks로 바꾸고 배열에 이전 dependency 정보를 저장한다. 저장한 dependency 값이 있다면 전달 받은 새로운 dependency와 비교를 하는데 이때 `Object.is()`를 이용한 얕은 비교를 수행한다. 
+
+비교 시에 하나라도 바뀌었을 때 `hasChanged`를 true로 바꾸고 callback()을 실행하며 새롭게 전달받은 dependency를 **hooks배열에 저장한다.** 
+
+useState와 useEffect를 구현하면서 hooks 배열에 관련 정보들이 저장되는 것을 보았다. 이점은 앞선 hooks의 규칙 조건문이나 반복문에서 hook이 사용되지 못하는 이유와 연결되는데, 조건문에서 사용되게 되면 **조건에 따라 hooks의 정보가 이전 순서와 다르게 저장되기 때문에** 해당하는 hook에 접근하는 게 아니라 다른 index로 접근해 버그가 발생하게 된다.
+
+직접 구현해보면서 왜 react hook이 조건문에 사용되면 안되는지 이해할 수 있었고 클로저가 어떻게 활용되어 있는지 이해할 수 있었다.
 
 ## useState
 
-useState는 **컴포넌트 내의 상태관리**를 위한 hook이다. 리액트 컴포넌트가 기본적으로 리렌더링되는 기준은 `state와 props`가 바뀌었을 때이다. props는 부모 컴포넌트로 부터 전달 받은 변하지 않는 데이터, state는 컴포넌트 내부에서 **변하는 데이터**로 설명할 수 있다. 단순히 변하는 값을 다룬다면 `let`으로 변수에 할당하면 되지 않을까 생각할 수 있지만, `useState`는 (1)데이터를 바꾸고 (2)컴포넌트를 리렌더링하는 2가지 step으로 이루어져 있다. 
+useState는 **컴포넌트 내의 상태관리**를 위한 hook이다. 리액트 컴포넌트가 기본적으로 리렌더링되는 기준은 `state와 props`가 바뀌었을 때이다. 그중 state는 컴포넌트 내부에서 **변하는 데이터**로 설명할 수 있다. 단순히 변하는 값을 다룬다면 `let`으로 변수에 할당하면 되지 않을까 생각할 수 있지만, `useState`는 (1)데이터를 바꾸고 (2)컴포넌트를 리렌더링하는 2가지 step으로 이루어져 있다.  
 
-
+useState를 사용하는 방법에는 (1) 값을 바로 할당하는 방법, (2) updater function을 이용하는 방법 두 가지가 있다. 둘 중 updater
 
 ### useEffect
 
@@ -333,3 +552,10 @@ function arePropsEqual(oldProps, newProps) {
 }
 ```
 
+
+
+[참조]
+
+- 황준일님 블로그: Vanilla Javascript로 React UseState Hook 만들기 https://junilhwang.github.io/TIL/Javascript/Design/Vanilla-JS-Make-useSate-hook/#_2-bottom-up-%E1%84%87%E1%85%AE%E1%86%AB%E1%84%89%E1%85%A5%E1%86%A8
+
+- 리액트 공식문서  https://beta.reactjs.org/
