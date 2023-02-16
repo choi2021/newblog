@@ -292,11 +292,189 @@ useState와 useEffect를 구현하면서 hooks 배열에 관련 정보들이 저
 
 직접 구현해보면서 왜 react hook이 조건문에 사용되면 안되는지 이해할 수 있었고 클로저가 어떻게 활용되어 있는지 이해할 수 있었다.
 
+
 ## useState
 
-useState는 **컴포넌트 내의 상태관리**를 위한 hook이다. 리액트 컴포넌트가 기본적으로 리렌더링되는 기준은 `state와 props`가 바뀌었을 때이다. 그중 state는 컴포넌트 내부에서 **변하는 데이터**로 설명할 수 있다. 단순히 변하는 값을 다룬다면 `let`으로 변수에 할당하면 되지 않을까 생각할 수 있지만, `useState`는 (1)데이터를 바꾸고 (2)컴포넌트를 리렌더링하는 2가지 step으로 이루어져 있다.  
+useState는 **컴포넌트 내의 상태관리**를 위한 hook이다. 리액트 컴포넌트가 기본적으로 리렌더링되는 기준은 `state와 props`가 바뀌었을 때이다. 그중 state는 컴포넌트 내부에서 **변하는 데이터**로 설명할 수 있다. 단순히 변하는 값을 다룬다면 `let`으로 변수에 할당하면 되지 않을까 생각할 수 있지만, `useState`는 (1)데이터를 바꾸고 (2)컴포넌트를 리렌더링하는 두 가지 step으로 이루어져 있다.  
 
-useState를 사용하는 방법에는 (1) 값을 바로 할당하는 방법, (2) updater function을 이용하는 방법 두 가지가 있다. 둘 중 updater
+상태를 업데이트 하는 방법에는 setFunction에 (1) 값을 바로 할당하는 방법, (2)인자로 updater function을 이용하는 방법 두 가지가 있다. 
+
+```jsx
+const [name, setName] = useState('Edward');
+
+function handleClick() {
+  setName('Taylor');
+  setAge(a => a + 1);
+  // ...
+```
+
+
+
+#### 리액트의 상태 업데이트 방식: Batching
+
+상태를 업데이트할 때 주의할 점은 **상태 변화는 UI의 변화로 이어진다** 라는 점이다. 이점이 중요한 이유는 리액트의 상태를 반영하는 방식인  `batching`과 관련되어있다.
+
+`batching`은 UI를 업데이트할 때 setFunction이 실행될 때마다 업데이트를 하는 것이 아니라 **모든 event handler가 동작했을 때** 일어나는 것을 의미한다. 매번 setFunction을 실행할 때마다 바로 바로 변하면 동기적으로 일어나는 workflow로 더 직관적이겠지만, setFunction마다 리랜더링 할 시에는 성능 문제가 발생할 수 있기 때문에 setFunction들을 `React queue`에 모아서 순서대로 실행하고, 실제로 변해야 하는 DOM요소들을 반영한다. 이러한 동작은 마치 useState가 비동기적으로 처리되는 것처럼 느껴지게 한다.
+
+주의할 점은 같은 상태를 업데이트하는 setFunction을 여러 번 호출했을 때다.
+
+ ```jsx
+ import { useState } from 'react';
+ 
+ export default function Counter() {
+   const [number, setNumber] = useState(0);
+ 
+   return (
+     <>
+       <h1>{number}</h1>
+       <button onClick={() => {
+         setNumber(number + 1);
+         setNumber(number + 1);
+         setNumber(number + 1);
+       }}>+3</button>
+     </>
+   )
+ }
+ ```
+
+
+
+위 코드에서 버튼을 클릭하면 state가 0에서 3으로 업데이트될 것을 기대하고 작성했지만 마지막으로 전달한 setFunction만 수행해 `number`는 1이 된다. 
+
+리액트 공식 문서는 이러한 동작 방식을 같은 상태의 여러 개의 업데이트를 요구하는 고객이 있고, 고객의 마지막 주문만 받는 것과 같다고 설명한다. 
+
+[React 공식 문서 사진]
+
+![image-20230216230833509](../../../assets/img/2023-02-03-useState,useEffect, useRef, memo/image-20230216230833509.png)
+
+이러한 모습은 마치 `debouncing`을 해 마지막 호출만 받는 것과 같이 생각되었다. 검색 API로 관련검색어를 호출할 때 매번 input에 사용자가 작성할 때마다 수행해 불필요한 API 비용을 만드는 것이 아니라 일정 시간 내의 처음과 끝의 요청만 수행하는 모습인 `debouncing`으로 원하는 시점에 맞게 해당 함수를 수행해 비용을 절약하고 있다고 생각했다.
+
+그러면 같은 상태를 업데이트하는 여러 번의 setFunction을 처리할 방법은 없을까?
+
+이 문제를 해결하기 위해서는 앞서 설명한 **updater function**을 이용할 수 있다.
+
+```jsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button onClick={() => {
+        setNumber(n => n + 1);
+        setNumber(n => n + 1);
+        setNumber(n => n + 1);
+      }}>+3</button>
+    </>
+  )
+}
+```
+
+**updater function** 방식은 앞서 직접 값을 할당하는 방식과 달리 이전 값을 참조해 함수의 인자로 전달해 함수를 실행한 다음 반환 값을 다시 인자로 사용해 우리가 원하는 상태 업데이트를 할 수 있다.
+
+| queued update | `n`  | returns     |
+| ------------- | ---- | ----------- |
+| `n => n + 1`  | `0`  | `0 + 1 = 1` |
+| `n => n + 1`  | `1`  | `1 + 1 = 2` |
+| `n => n + 1`  | `2`  | `2 + 1 = 3` |
+
+그렇다면 이제 조금 더 복잡한 상황의 코드를 보자.
+
+```jsx
+import { useState } from 'react';
+
+export default function Counter() {
+  const [number, setNumber] = useState(0);
+
+  return (
+    <>
+      <h1>{number}</h1>
+      <button onClick={() => {
+        setNumber(number + 5);
+        setNumber(n => n + 1);
+        setNumber(42);
+      }}>Increase the number</button>
+    </>
+  )
+}
+```
+
+위 코드는 (1) 0+5를 할당하는 setFunction, (2) 5=>5+1을 할당하는 setFunction (3) 42를 할당하는 setFunction이 있다. 결과적으로 버튼을 클릭하면 42가 되는 것을 볼 수 있는데 이러한 흐름은 다음 표로 정리할 수 있다.
+
+| queued update       | `n`          | returns     |
+| ------------------- | ------------ | ----------- |
+| “replace with `5`”  | `0` (unused) | `5`         |
+| `n => n + 1`        | `5`          | `5 + 1 = 6` |
+| “replace with `42`” | `6` (unused) | `42`        |
+
+정리된 표를 보면 사실 값을 할당하는 방식도 결국 함수를 전달하는데 이때 이전 값을 참조하지 않고 전달하는 **setState(prev=>x)**로 진행되는 것을 새롭게 알 수 있었다.
+
+#### 함수로 초기 값 설정
+
+useState의 초기 값을 설정할 때 값을 전달할 수도 있지만 함수를 전달할 수도 있다. 실제로 사용한 예로는 localStorage의 토큰을 initialValue로 state에 전달해야하는 상황이 있었다.
+
+```jsx
+const getToken=()=>{
+   return localStorage.getItem("access_token")
+}
+function TodoList() {
+  const [token, setToken] = useState(getToken());
+  // ...
+```
+
+위 코드의 문제점은 함수의 실행 후 반환 값을 useState에 전달해 useState(prev=>getToken())이 되어 컴포넌트가 리랜더링 시 매번 수행된다. 이점을 막기 위해서는 함수를 실행하게 하는 것이 아니라 함수 자체를 전달해 **초기 값**으로 반환된 값을 받아오게 할 수 있다. 위에서 봤던 updaterFunction 방식이 고차 함수로 수행된다.
+
+```jsx
+const getToken=()=>{
+   return localStorage.getItem("access_token")
+}
+function TodoList() {
+  const [token, setToken] = useState(getToken); // useState(prev=>()=>getToken())
+  // ...
+```
+
+#### key로 컴포넌트 바꾸기
+
+특정 컴포넌트를 새롭게 만들게 하고 싶을 때 key를 이용해서 react에게 알려 줄 수 있는데, key값이 바뀌면 리액트에서 DOM요소가 바뀌었다고 이해하기 때문에 key값에 상태를 전달해 컴포넌트를 새롭게 만들게 할 수 있다.
+
+```jsx
+import { useState } from 'react';
+
+export default function App() {
+  const [version, setVersion] = useState(0);
+
+  function handleReset() {
+    setVersion(version + 1);
+  }
+
+  return (
+    <>
+      <button onClick={handleReset}>Reset</button>
+      <Form key={version} />
+    </>
+  );
+}
+
+function Form() {
+  const [name, setName] = useState('Taylor');
+
+  return (
+    <>
+      <input
+        value={name}
+        onChange={e => setName(e.target.value)}
+      />
+      <p>Hello, {name}.</p>
+    </>
+  );
+}
+```
+
+만약 내가 코드를 작성했다면 컴포넌트 밖에 `const initialValue="taylor"`를 만들고 App 컴포넌트에서  `handleReset`함수에서 값을 initialValue로 초기화시키는 방식으로 진행했겠지만, 상태를 key로 컴포넌트에 전달함으로써 상태가 달라지면 key가 달라져 새롭게 Form 컴포넌트가 리랜더링 되어 `name`의 초기 값인 `Taylor`로 리셋된 것을 볼 수 있었다.  
+
+
 
 ### useEffect
 
@@ -551,6 +729,12 @@ function arePropsEqual(oldProps, newProps) {
   );
 }
 ```
+
+
+
+## 마무리
+
+면접을 진행하면서 대답하지 못했던 부분들, 이상하게 답했던 부분들을 정리하면서 내가 아직 많이 부족하구나 더 많이 공부하고 더 빨리 성장하자는 맘이 생길 수 있었다. 특히 직접 react Hook 구현 코드를 따라 쳐보면서 만들자 react hook에 왜 클로저가 도입되었는지 이해할 수 있어 너무 좋은 공부가 되었다.
 
 
 
