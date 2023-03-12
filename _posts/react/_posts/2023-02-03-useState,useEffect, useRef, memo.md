@@ -1,5 +1,5 @@
 ---
-title: 'React study: useState, useEffect, useRef, memo'
+title: 'useState, useEffect, useRef, memo'
 categories:
   - react
 ---
