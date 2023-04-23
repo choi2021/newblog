@@ -191,6 +191,5 @@ foo(); // 3초 뒤 [1,2,3]
 
 [참고]
 
-모던 자바스크립트 딥다이브: http://www.yes24.com/Product/Goods/92742567
-
-제너레이터와 async/await: https://poiemaweb.com/es6-generator
+[모던 자바스크립트 딥다이브](http://www.yes24.com/Product/Goods/92742567)
+[제너레이터와 async/await](https://poiemaweb.com/es6-generator)
