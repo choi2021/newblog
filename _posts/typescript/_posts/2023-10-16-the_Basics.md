@@ -1,8 +1,11 @@
-```
-title: "TS handbook: the Basics"
+---
+title: "Typescript: The Basics"
 categories: typescript
 tags: ["typescript"]
-```
+
+---
+
+
 
 
 
