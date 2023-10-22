@@ -6,7 +6,7 @@ tags: ["typescript"]
 
 
 
-### Everyday Types 😊
+## Everyday Types 😊
 
 이제 기본적인 타입스크립트의 타입들에 대해 알아보자. 대부분 기본적인 부분이라 크게 정리할 부분은 없었다.
 
