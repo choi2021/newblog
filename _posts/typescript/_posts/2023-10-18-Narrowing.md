@@ -3,7 +3,6 @@ title: "Typescript: Narrowing"
 categories: typescript
 tags: ["typescript"]
 
-
 ---
 
 
