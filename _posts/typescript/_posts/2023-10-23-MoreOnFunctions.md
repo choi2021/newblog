@@ -1,5 +1,5 @@
 ---
-title: "Typescript: Narrowing"
+title: "Typescript: More On Functions"
 categories: typescript
 tags: ["typescript"]
 
