@@ -122,7 +122,7 @@ generic을 이용해서 연관있는 input 타입들의 관계를 정의했지�
 
 Generic 함수를 잘 작성하는 방법 3가지를 정리해보자.
 
-1. Push Type Param Down: param을 더 구체적인 값으로 사용한다.
+- Push Type Param Down: param을 더 구체적인 값으로 사용한다.
 
 ```typescript
 function firstElement1<Type>(arr: Type[]) {
@@ -139,9 +139,7 @@ const a = firstElement1([1, 2, 3]);
 const b = firstElement2([1, 2, 3]);
 ```
 
-<br/>
-
-2. Use Fewer Type Parameters: 더 적은 타입의 param으로 이용한다.
+- Use Fewer Type Parameters: 더 적은 타입의 param으로 이용한다.
 
 ```typescript
 function filter1<Type>(arr: Type[], func: (arg: Type) => boolean): Type[] {
@@ -158,9 +156,7 @@ function filter2<Type, Func extends (arg: Type) => boolean>(
 
 filter2의 경우는 어떤 함수 타입인지 일일이 정해줘야하므로 사용처에서 불편함이 존재한다.
 
-<br/>
-
-3. Type Parameters Should Appear Twice: 재사용이 필요한 상황에만 제네릭을 쓰자.
+- Type Parameters Should Appear Twice: 재사용이 필요한 상황에만 제네릭을 쓰자.
 
 ```typescript
 function greet<Str extends string>(s: Str) {
